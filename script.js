@@ -25,16 +25,23 @@ searchInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") searchUser();
 });
 
+// Optional: Replace with your token or remove Authorization header for public API rate limits
+const GITHUB_TOKEN = ""; // Leave empty or put your token here
+
 async function searchUser() {
   const username = searchInput.value.trim();
-
   if (!username) return alert("Please enter a username");
 
-  try {
-    profileContainer.classList.add("hidden");
-    errorContainer.classList.add("hidden");
+  profileContainer.classList.add("hidden");
+  errorContainer.classList.add("hidden");
 
-    const response = await fetch(`https://api.github.com/users/${username}`);
+  try {
+    const response = await fetch(`https://api.github.com/users/${username}`, {
+      headers: GITHUB_TOKEN
+        ? { Authorization: `token ${GITHUB_TOKEN}` }
+        : undefined
+    });
+
     if (!response.ok) throw new Error("User not found");
 
     const userData = await response.json();
@@ -49,7 +56,12 @@ async function fetchRepositories(reposUrl) {
   reposContainer.innerHTML = '<div class="loading-repos">Loading repositories...</div>';
 
   try {
-    const response = await fetch(reposUrl + "?per_page=6");
+    const response = await fetch(`${reposUrl}?per_page=6`, {
+      headers: GITHUB_TOKEN
+        ? { Authorization: `token ${GITHUB_TOKEN}` }
+        : undefined
+    });
+
     const repos = await response.json();
 
     if (!Array.isArray(repos)) {
@@ -82,27 +94,12 @@ function displayRepos(repos) {
       </a>
       <p class="repo-description">${repo.description || "No description available"}</p>
       <div class="repo-meta">
-        ${
-          repo.language
-            ? `
-          <div class="repo-meta-item">
-            <i class="fas fa-circle"></i> ${repo.language}
-          </div>
-        `
-            : ""
-        }
-        <div class="repo-meta-item">
-          <i class="fas fa-star"></i> ${repo.stargazers_count}
-        </div>
-        <div class="repo-meta-item">
-          <i class="fas fa-code-fork"></i> ${repo.forks_count}
-        </div>
-        <div class="repo-meta-item">
-          <i class="fas fa-history"></i> ${updatedAt}
-        </div>
+        ${repo.language ? `<div class="repo-meta-item"><i class="fas fa-circle"></i> ${repo.language}</div>` : ""}
+        <div class="repo-meta-item"><i class="fas fa-star"></i> ${repo.stargazers_count}</div>
+        <div class="repo-meta-item"><i class="fas fa-code-fork"></i> ${repo.forks_count}</div>
+        <div class="repo-meta-item"><i class="fas fa-history"></i> ${updatedAt}</div>
       </div>
     `;
-
     reposContainer.appendChild(repoCard);
   });
 }
@@ -112,10 +109,8 @@ function displayUserData(user) {
   nameElement.textContent = user.name || user.login;
   usernameElement.textContent = `@${user.login}`;
   bioElement.textContent = user.bio || "No bio available";
-
   locationElement.textContent = user.location || "Not specified";
   joinedDateElement.textContent = formatDate(user.created_at);
-
   profileLink.href = user.html_url;
   followers.textContent = user.followers;
   following.textContent = user.following;
@@ -156,6 +151,6 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
-    day: "numeric",
+    day: "numeric"
   });
 }
